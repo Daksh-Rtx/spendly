@@ -21,7 +21,7 @@
         </p>
         <div class="hero-actions">
             <a href="{{ url_for('register') }}" class="btn-primary">Create free account</a>
-            <a href="#" class="btn-primary">See how it works</a>
+            <a href="#" class="btn-primary" id="open-video-modal">See how it works</a>
         </div>
         <div class="hero-preview">
             <div class="preview-window">
@@ -72,6 +72,16 @@
     </div>
 </section>
 
+<div class="modal" id="video-modal" role="dialog" aria-modal="true" aria-label="See how it works">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-container">
+        <button class="modal-close" id="modal-close" aria-label="Close modal">&times;</button>
+        <div class="modal-video">
+            <iframe id="video-frame" src="" title="How Spendly works" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
+
 <section class="features">
     <div class="features-inner">
         <div class="feature-card">
@@ -100,4 +110,46 @@
     </div>
 </section>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var openBtn = document.getElementById('open-video-modal');
+    var modal = document.getElementById('video-modal');
+    var closeBtn = document.getElementById('modal-close');
+    var backdrop = document.getElementById('modal-backdrop');
+    var frame = document.getElementById('video-frame');
+    var videoSrc = 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ';
+
+    function openModal() {
+        if (!modal) return;
+        frame.setAttribute('src', videoSrc);
+        modal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        document.body.style.overflow = '';
+        if (frame) {
+            frame.setAttribute('src', '');
+        }
+    }
+
+    if (openBtn) {
+        openBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            openModal();
+        });
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+    if (backdrop) {
+        backdrop.addEventListener('click', closeModal);
+    }
+})();
+</script>
 {% endblock %}
