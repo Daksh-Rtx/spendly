@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Spendly — Privacy Policy{% endblock %}
+
+{% block content %}
+
+<section class="privacy-section">
+    <div class="privacy-inner">
+        <h1 class="privacy-title">Privacy Policy</h1>
+        <p class="privacy-updated">Last updated: November 22, 2026</p>
+
+        <div class="privacy-body">
+            <section>
+                <h2>1. Data We Collect</h2>
+                <p>Spendly collects the personal expense data you enter, including categories, amounts, dates, and descriptions, as well as basic account information such as your name and email address.</p>
+            </section>
+
+            <section>
+                <h2>2. How We Use Your Data</h2>
+                <p>We use your data to provide expense tracking features such as summaries, category breakdowns, and spending insights. We do not use your financial data for advertising.</p>
+            </section>
+
+            <section>
+                <h2>3. Data Storage</h2>
+                <p>Your data is stored securely in accordance with industry standards. Access is limited to you and authorized personnel who maintain the service.</p>
+            </section>
+
+            <section>
+                <h2>4. Third Party Services</h2>
+                <p>We may use third party services for hosting, analytics, and email delivery. These providers are bound to process data only as needed to operate the service.</p>
+            </section>
+
+            <section>
+                <h2>5. Contact Us</h2>
+                <p>If you have questions about this Privacy Policy or your data, please reach out to us through the contact information provided in the app.</p>
+            </section>
+        </div>
+
+        <a href="{{ url_for('landing') }}" class="btn-ghost privacy-back">Back to home</a>
+
+    </div>
+</section>
+
+{% endblock %}
