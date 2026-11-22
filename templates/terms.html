@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Spendly — Terms and Conditions{% endblock %}
+
+{% block content %}
+
+<section class="terms-section">
+    <div class="terms-inner">
+        <h1 class="terms-title">Terms and Conditions</h1>
+        <p class="terms-updated">Last updated: November 22, 2026</p>
+
+        <div class="terms-body">
+            <section>
+                <h2>1. Acceptance of Terms</h2>
+                <p>By accessing or using Spendly, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use the service.</p>
+            </section>
+
+            <section>
+                <h2>2. Use of Service</h2>
+                <p>Spendly provides a personal expense tracking service. You agree to use the service only for lawful personal expense tracking and not to disrupt or misuse it.</p>
+            </section>
+
+            <section>
+                <h2>3. User Data</h2>
+                <p>You retain ownership of the financial data you enter. Spendly stores this data in order to provide the service's features, such as summaries and category breakdowns, and does not sell your personal information.</p>
+            </section>
+
+            <section>
+                <h2>4. Limitations of Liability</h2>
+                <p>The service is provided on an "as is" basis, without warranties of any kind. Spendly is not liable for any financial decisions made based on data stored or displayed through the service.</p>
+            </section>
+
+            <section>
+                <h2>5. Changes to Terms</h2>
+                <p>We may revise these terms from time to time. Your continued use of Spendly after changes are posted constitutes acceptance of the revised terms.</p>
+            </section>
+        </div>
+
+        <a href="{{ url_for('landing') }}" class="btn-ghost terms-back">Back to home</a>
+
+    </div>
+</section>
+
+{% endblock %}
