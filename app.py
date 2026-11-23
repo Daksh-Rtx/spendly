@@ -1,6 +1,16 @@
 from flask import Flask, render_template
 
+from database.db import close_db, get_db, init_db, seed_db
+
 app = Flask(__name__)
+
+# Register teardown so the SQLite connection is closed after each request.
+app.teardown_appcontext(close_db)
+
+# Initialise the database schema and seed sample data on startup.
+with app.app_context():
+    init_db()
+    seed_db()
 
 
 # ------------------------------------------------------------------ #
