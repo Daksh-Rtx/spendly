@@ -1,7 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request
 
-from database.db import close_db, get_db, init_db, seed_db
-from werkzeug.security import generate_password_hash
+from database.db import close_db, create_user, get_db, get_user_by_email, init_db, seed_db
 
 app = Flask(__name__)
 
@@ -36,18 +35,10 @@ def register():
         if len(password) < 8:
             return render_template("register.html", error="Password must be at least 8 characters."), 400
 
-        db = get_db()
-        existing = db.execute(
-            "SELECT id FROM users WHERE email = ?", (email,)
-        ).fetchone()
-        if existing:
+        if get_user_by_email(email):
             return render_template("register.html", error="Email is already registered."), 400
 
-        db.execute(
-            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-            (name, email, generate_password_hash(password)),
-        )
-        db.commit()
+        create_user(name, email, password)
         return redirect(url_for("login"))
 
     return render_template("register.html")
