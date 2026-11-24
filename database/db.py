@@ -139,6 +139,15 @@ def get_user_by_email(email):
     ).fetchone()
 
 
+def get_user_by_id(user_id):
+    """Return the user row matching ``id``, or ``None`` if not found."""
+    db = get_db()
+    return db.execute(
+        "SELECT id, name, email, password_hash, created_at FROM users WHERE id = ?",
+        (user_id,),
+    ).fetchone()
+
+
 def create_user(name, email, password):
     """Insert a new user with a werkzeug-hashed password.
 
