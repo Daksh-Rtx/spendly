@@ -1,6 +1,17 @@
-from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from functools import wraps
 
-from database.db import close_db, create_user, get_db, get_user_by_email, init_db, seed_db
+from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
+
+from database.db import (
+    close_db,
+    create_user,
+    get_db,
+    get_user_by_email,
+    get_user_by_id,
+    init_db,
+    seed_db,
+    verify_password,
+)
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
@@ -15,6 +26,44 @@ with app.app_context():
 
 
 # ------------------------------------------------------------------ #
+# Authentication helpers                                              #
+# ------------------------------------------------------------------ #
+
+def login_required(view_func):
+    """Protect a route — redirect to /login if no user is in session."""
+
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if g.user is None:
+            flash("Please log in first.")
+            return redirect(url_for("login"))
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
+
+
+def guest_only(view_func):
+    """Redirect logged-in users away from guest-only pages (login, register)."""
+
+    @wraps(view_func)
+    def wrapped_view(*args, **kwargs):
+        if g.user is not None:
+            return redirect(url_for("landing"))
+        return view_func(*args, **kwargs)
+
+    return wrapped_view
+
+
+@app.before_request
+def load_user():
+    """Load the current user from the session into ``g.user`` for every request."""
+    g.user = None
+    user_id = session.get("user_id")
+    if user_id is not None:
+        g.user = get_user_by_id(user_id)
+
+
+# ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
 
@@ -24,6 +73,7 @@ def landing():
 
 
 @app.route("/register", methods=["GET", "POST"])
+@guest_only
 def register():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -60,8 +110,34 @@ def register():
     return render_template("register.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
+@guest_only
 def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        # Validate both fields are present
+        if not email or not password:
+            flash("Email and password are required.")
+            return render_template("login.html")
+
+        # Look up the user by email
+        user = get_user_by_email(email)
+        if user is None:
+            flash("Invalid email or password.")
+            return render_template("login.html")
+
+        # Verify the password against the stored hash
+        if not verify_password(password, user["password_hash"]):
+            flash("Invalid email or password.")
+            return render_template("login.html")
+
+        # Sign the user in
+        session["user_id"] = user["id"]
+        flash(f"Welcome back, {user['name']}!")
+        return redirect(url_for("landing"))
+
     return render_template("login.html")
 
 
@@ -81,10 +157,13 @@ def privacy():
 
 @app.route("/logout")
 def logout():
-    return "Logout — coming in Step 3"
+    session.clear()
+    flash("You have been logged out.")
+    return redirect(url_for("landing"))
 
 
 @app.route("/profile")
+@login_required
 def profile():
     return "Profile page — coming in Step 4"
 
