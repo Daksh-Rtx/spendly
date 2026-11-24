@@ -1,68 +1,60 @@
 # Spec: Registration
 
 ## Overview
-
-Enable new users to create a Spendly account by submitting name, email, and
-password through the existing `register.html` form. This step wires up the
-`POST /register` handler that the template already targets, validates the
-input, hashes the password with werkzeug, stores the user in the `users`
-table, and redirects authenticated users to the dashboard once that step
-exists.
+Implement user registration so new visitors can create a Spendly account. This step upgrades the existing stub `GET /register` route into a fully functional form that accepts a POST, validates input, hashes the password, and inserts a new row into the `users` table. On success the user is shown with a success message and then redirected to the login page. This is the entry point for all authenticated features that follow.
 
 ## Depends on
-
-- Step 1 (database setup) — `users` table schema and `get_db()` helper must
-  be complete and correct.
+- Step 01 – Database setup (`users` table, `get_db()`)
 
 ## Routes
-
-- `GET /register` — render registration form — public
-- `POST /register` — validate input, create user, redirect to login — public
-
-No new routes beyond the `POST /register` handler.
+- `GET /register` – render registration form — public (already exists as stub, upgrade it)
+- `POST /register` – process registration form, insert user, redirect to `/login` — public
 
 ## Database changes
+No new tables or columns. The existing `users` table (id, name, email, password_hash, created_at) covers all requirements.
 
-No database changes. The `users` table already exists with the required
-columns (`id`, `name`, `email`, `password_hash`, `created_at`).
+A new DB helper must be added to `database/db.py`:
+- `create_user(name, email, password)` – hashes the password with `werkzeug`, inserts a row into `users`, returns the new user's `id`. Raises `sqlite3.IntegrityError` if the email is already taken (UNIQUE constraint).
 
 ## Templates
-
-- Modify: `templates/register.html` — the form already posts to `/register`
-  with `method="POST"`; add an error block if validation fails and keep the
-  existing fields.
+- **Modify**: `templates/register.html`
+  - Change the form `action` to `url_for('register')` with `method="post"`
+  - Add `name` attributes to all inputs: `name`, `email`, `password`, `confirm_password`
+  - Add a block to display a flash error message (e.g. "Email already registered", "Passwords do not match")
+  - Keep all existing visual design
 
 ## Files to change
-
-- `app.py` — add `POST /register` handler
-- `templates/register.html` — ensure error display is supported
+- `app.py` – upgrade `register()` to handle `GET` and `POST`; add flash + redirect logic
+- `database/db.py` – add `create_user()` helper
+- `templates/register.html` – wire up form action/method and flash message display
 
 ## Files to create
-
-- None
+None.
 
 ## New dependencies
-
-No new dependencies.
+No new dependencies. Uses `werkzeug.security` (already installed) and Flask's built-in `flash` / `redirect` / `url_for`.
 
 ## Rules for implementation
-
 - No SQLAlchemy or ORMs
-- Parameterised queries only
-- Passwords hashed with werkzeug
+- Parameterised queries only — never use f-strings in SQL
+- Hash passwords with `werkzeug.security.generate_password_hash` — never store plaintext
+- `app.secret_key` must be set in `app.py` for `flash()` to work (use a hardcoded dev string for now)
+- Server-side validation must check:
+  1. All fields are non-empty
+  2. `password == confirm_password`
+  3. Email is not already registered (catch `sqlite3.IntegrityError`)
+- On any validation failure, re-render the form with a flashed error message — do not redirect
+- On success, `flash` a success message and `redirect` to `url_for('login')`
+- Use `abort(405)` if an unsupported HTTP method reaches the route
+- All templates extend `base.html`
 - Use CSS variables — never hardcode hex values
-- All templates extend base.html
-- `GET /register` must remain a plain render (no auth required)
-- `POST /register` must reject duplicate emails with a clear error
-- Minimum password length: 8 characters
-- Use `abort()` for HTTP errors, not bare string returns
-- Redirect on success — never render a template with a flash message
+- Use `url_for()` for every internal link — never hardcode URLs
 
 ## Definition of done
-
-- [ ] `GET /register` still renders the form
-- [ ] `POST /register` with valid data creates a user and redirects
-- [ ] `POST /register` with a duplicate email shows an error
-- [ ] `POST /register` with a short password shows an error
-- [ ] Stored password is a werkzeug hash, not plaintext
-- [ ] App runs without errors on port 5001
+- [ ] `GET /register` renders the registration form without errors
+- [ ] Submitting the form with all valid fields creates a new user in `users` and redirects to `/login`
+- [ ] Submitting with mismatched passwords re-renders the form with an error message, no DB insert
+- [ ] Submitting with an already-registered email re-renders the form with "Email already registered" error
+- [ ] Submitting with any empty field re-renders the form with a validation error
+- [ ] Password is stored as a hash — never plaintext — verifiable by inspecting `spendly.db`
+- [ ] No duplicate user is created on repeated valid submissions with the same email
