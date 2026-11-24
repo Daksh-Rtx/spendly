@@ -12,7 +12,7 @@ import os
 import sqlite3
 
 from flask import g
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # SQLite database file lives at the project root.
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -123,3 +123,37 @@ def seed_db():
         expenses,
     )
     db.commit()
+
+
+# ------------------------------------------------------------------ #
+# User helpers                                                        #
+# ------------------------------------------------------------------ #
+
+
+def get_user_by_email(email):
+    """Return the user row matching ``email``, or ``None`` if not found."""
+    db = get_db()
+    return db.execute(
+        "SELECT id, name, email, password_hash, created_at FROM users WHERE email = ?",
+        (email,),
+    ).fetchone()
+
+
+def create_user(name, email, password):
+    """Insert a new user with a werkzeug-hashed password.
+
+    Returns the new user's ``id``. Raises ``sqlite3.IntegrityError`` if the
+    email is already registered (the ``users.email`` column is ``UNIQUE``).
+    """
+    db = get_db()
+    cursor = db.execute(
+        "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+        (name, email, generate_password_hash(password)),
+    )
+    db.commit()
+    return cursor.lastrowid
+
+
+def verify_password(password, password_hash):
+    """Return ``True`` if ``password`` matches the stored ``password_hash``."""
+    return check_password_hash(password_hash, password)
