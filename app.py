@@ -48,7 +48,7 @@ def guest_only(view_func):
     @wraps(view_func)
     def wrapped_view(*args, **kwargs):
         if g.user is not None:
-            return redirect(url_for("landing"))
+            return redirect(url_for("profile"))
         return view_func(*args, **kwargs)
 
     return wrapped_view
@@ -136,7 +136,7 @@ def login():
         # Sign the user in
         session["user_id"] = user["id"]
         flash(f"Welcome back, {user['name']}!")
-        return redirect(url_for("landing"))
+        return redirect(url_for("profile"))
 
     return render_template("login.html")
 
@@ -165,7 +165,36 @@ def logout():
 @app.route("/profile")
 @login_required
 def profile():
-    return "Profile page — coming in Step 4"
+    user = {
+        "name": "Demo User",
+        "email": "demo@spendly.com",
+        "member_since": "Nov 2026",
+    }
+    stats = {
+        "total_spent": 5270.00,
+        "transaction_count": 8,
+        "top_category": "Food",
+    }
+    transactions = [
+        {"date": "2026-11-01", "description": "Lunch at cafe", "category": "Food", "amount": 850.00},
+        {"date": "2026-11-02", "description": "Metro pass recharge", "category": "Transport", "amount": 450.00},
+        {"date": "2026-11-03", "description": "Electricity bill", "category": "Bills", "amount": 1200.00},
+        {"date": "2026-11-04", "description": "Dental cleaning", "category": "Health", "amount": 350.00},
+        {"date": "2026-11-05", "description": "Movie tickets", "category": "Entertainment", "amount": 600.00},
+        {"date": "2026-11-06", "description": "Groceries", "category": "Shopping", "amount": 1500.00},
+    ]
+    categories = [
+        {"name": "Food", "total": 1170.00},
+        {"name": "Transport", "total": 450.00},
+        {"name": "Bills", "total": 1200.00},
+    ]
+    return render_template(
+        "profile.html",
+        user=user,
+        stats=stats,
+        transactions=transactions,
+        categories=categories,
+    )
 
 
 @app.route("/expenses/add")
