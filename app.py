@@ -12,6 +12,12 @@ from database.db import (
     seed_db,
     verify_password,
 )
+from database.queries import (
+    get_category_breakdown,
+    get_recent_transactions,
+    get_summary_stats,
+    get_user_by_id as get_user_by_id_query,
+)
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
@@ -165,28 +171,16 @@ def logout():
 @app.route("/profile")
 @login_required
 def profile():
-    user = {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "member_since": "Nov 2026",
-    }
-    stats = {
-        "total_spent": 5270.00,
-        "transaction_count": 8,
-        "top_category": "Food",
-    }
-    transactions = [
-        {"date": "2026-11-01", "description": "Lunch at cafe", "category": "Food", "amount": 850.00},
-        {"date": "2026-11-02", "description": "Metro pass recharge", "category": "Transport", "amount": 450.00},
-        {"date": "2026-11-03", "description": "Electricity bill", "category": "Bills", "amount": 1200.00},
-        {"date": "2026-11-04", "description": "Dental cleaning", "category": "Health", "amount": 350.00},
-        {"date": "2026-11-05", "description": "Movie tickets", "category": "Entertainment", "amount": 600.00},
-        {"date": "2026-11-06", "description": "Groceries", "category": "Shopping", "amount": 1500.00},
-    ]
+    user = get_user_by_id_query(g.user["id"])
+    if user is None:
+        flash("User not found.")
+        return redirect(url_for("login"))
+    stats = get_summary_stats(g.user["id"])
+    transactions = get_recent_transactions(g.user["id"], limit=10)
+    # Map query helper's `amount` key to the template's expected `total` key.
     categories = [
-        {"name": "Food", "total": 1170.00},
-        {"name": "Transport", "total": 450.00},
-        {"name": "Bills", "total": 1200.00},
+        {"name": c["name"], "total": c["amount"], "percent": c["pct"]}
+        for c in get_category_breakdown(g.user["id"])
     ]
     return render_template(
         "profile.html",

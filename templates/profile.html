@@ -82,7 +82,7 @@
                             <span class="cat-row-amount">₹{{ "%.2f"|format(cat.total) }}</span>
                         </div>
                         <div class="cat-bar-track">
-                            <div class="cat-bar cat-bar--{{ cat.name | lower }}"></div>
+                            <div class="cat-bar cat-bar--{{ cat.name | lower }}" style="width: {{ cat.percent }}%"></div>
                         </div>
                     </div>
                     {% endfor %}
