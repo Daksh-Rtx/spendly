@@ -254,6 +254,13 @@ def profile():
     )
 
 
+@app.route("/analytics")
+@login_required
+def analytics():
+    """Analytics page — coming soon placeholder for logged-in users."""
+    return render_template("analytics.html")
+
+
 @app.route("/expenses/add")
 def add_expense():
     return "Add expense — coming in Step 7"
