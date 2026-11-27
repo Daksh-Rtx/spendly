@@ -37,6 +37,24 @@
             </div>
         </div>
 
+        <!-- Date filter bar -->
+        <div class="filter-bar">
+            <div class="filter-presets">
+                <a href="{{ preset_urls.all_time }}" class="filter-preset-btn {{ 'filter-preset-btn--active' if active_preset == 'all_time' }}">All Time</a>
+                <a href="{{ preset_urls.this_week }}" class="filter-preset-btn {{ 'filter-preset-btn--active' if active_preset == 'this_week' }}">This Week</a>
+                <a href="{{ preset_urls.this_month }}" class="filter-preset-btn {{ 'filter-preset-btn--active' if active_preset == 'this_month' }}">This Month</a>
+                <a href="{{ preset_urls.this_year }}" class="filter-preset-btn {{ 'filter-preset-btn--active' if active_preset == 'this_year' }}">This Year</a>
+            </div>
+            <div class="filter-divider"></div>
+            <form class="filter-form" method="GET" action="{{ url_for('profile') }}">
+                <label for="date-from" class="filter-to-label">From</label>
+                <input type="date" id="date-from" name="start" class="filter-date-input" value="{{ start or '' }}">
+                <label for="date-to" class="filter-to-label">To</label>
+                <input type="date" id="date-to" name="end" class="filter-date-input" value="{{ end or '' }}">
+                <button type="submit" class="filter-apply-btn">Apply</button>
+            </form>
+        </div>
+
         <!-- Transaction history + category breakdown -->
         <div class="profile-grid">
 
@@ -64,6 +82,10 @@
                                     </span>
                                 </td>
                                 <td class="tx-amount">₹{{ "%.2f"|format(tx.amount) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="tx-empty">No transactions in this date range.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
