@@ -1,3 +1,5 @@
+import re
+from datetime import date, datetime, timedelta
 from functools import wraps
 
 from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
@@ -16,7 +18,7 @@ from database.queries import (
     get_category_breakdown,
     get_recent_transactions,
     get_summary_stats,
-    get_user_by_id as get_user_by_id_query,
+    get_user_by_id as get_user_profile,
 )
 
 app = Flask(__name__)
@@ -72,6 +74,26 @@ def load_user():
 # ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
+
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _parse_date(value):
+    """Return *value* if it is a valid ``YYYY-MM-DD`` string, otherwise ``None``.
+
+    If *value* is empty/None or not a valid ISO date, returns ``None`` (means
+    "show all transactions").  This prevents garbage from being passed to SQL.
+    """
+    if not value:
+        return None
+    if not _DATE_RE.match(value):
+        return None
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return None
+    return value
+
 
 @app.route("/")
 def landing():
@@ -171,23 +193,64 @@ def logout():
 @app.route("/profile")
 @login_required
 def profile():
-    user = get_user_by_id_query(g.user["id"])
+    user = get_user_profile(g.user["id"])
     if user is None:
         flash("User not found.")
         return redirect(url_for("login"))
-    stats = get_summary_stats(g.user["id"])
-    transactions = get_recent_transactions(g.user["id"], limit=10)
+
+    # Optional date filter — ?start=YYYY-MM-DD&end=YYYY-MM-DD (inclusive range).
+    start = _parse_date(request.args.get("start"))
+    end = _parse_date(request.args.get("end"))
+
+    stats = get_summary_stats(g.user["id"], start_date=start, end_date=end)
+    transactions = get_recent_transactions(
+        g.user["id"], limit=10, start_date=start, end_date=end
+    )
     # Map query helper's `amount` key to the template's expected `total` key.
     categories = [
         {"name": c["name"], "total": c["amount"], "percent": c["pct"]}
-        for c in get_category_breakdown(g.user["id"])
+        for c in get_category_breakdown(g.user["id"], start_date=start, end_date=end)
     ]
+
+    # Compute preset URLs and the active preset for the filter bar.
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())  # Monday of this week
+    month_start = today.replace(day=1)
+    year_start = today.replace(month=1, day=1)
+
+    preset_urls = {
+        "this_week": url_for(
+            "profile", start=week_start.isoformat(), end=today.isoformat()
+        ),
+        "this_month": url_for(
+            "profile", start=month_start.isoformat(), end=today.isoformat()
+        ),
+        "this_year": url_for(
+            "profile", start=year_start.isoformat(), end=today.isoformat()
+        ),
+        "all_time": url_for("profile"),
+    }
+
+    active_preset = None
+    if start is None and end is None:
+        active_preset = "all_time"
+    elif start == week_start.isoformat() and end == today.isoformat():
+        active_preset = "this_week"
+    elif start == month_start.isoformat() and end == today.isoformat():
+        active_preset = "this_month"
+    elif start == year_start.isoformat() and end == today.isoformat():
+        active_preset = "this_year"
+
     return render_template(
         "profile.html",
         user=user,
         stats=stats,
         transactions=transactions,
         categories=categories,
+        start=start,
+        end=end,
+        preset_urls=preset_urls,
+        active_preset=active_preset,
     )
 
 
