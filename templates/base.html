@@ -21,6 +21,7 @@
             <div class="nav-links">
                 {% if g.user %}
                 <a href="{{ url_for('profile') }}" class="{{ 'nav-link--active' if request.endpoint == 'profile' }}">Profile</a>
+                <a href="{{ url_for('add_expense') }}" class="{{ 'nav-link--active' if request.endpoint == 'add_expense' }}">Add Expense</a>
                 <a href="{{ url_for('analytics') }}" class="{{ 'nav-link--active' if request.endpoint == 'analytics' }}">Analytics</a>
                 <a href="{{ url_for('logout') }}">Logout</a>
                 {% else %}

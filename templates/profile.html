@@ -10,6 +10,13 @@
 {% block content %}
 <div class="profile-page">
     <div class="profile-inner">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+            <div class="profile-flash">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
 
         <!-- User info card -->
         <div class="profile-header-card">
@@ -19,6 +26,7 @@
                 <p class="profile-email">{{ user.email }}</p>
                 <p class="profile-since">Member since {{ user.member_since }}</p>
             </div>
+            <a href="{{ url_for('add_expense') }}" class="btn-primary profile-add-btn">+ Add Expense</a>
         </div>
 
         <!-- Summary stats row -->
