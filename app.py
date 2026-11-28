@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import date, datetime, timedelta
 from functools import wraps
@@ -19,10 +20,21 @@ from database.queries import (
     get_recent_transactions,
     get_summary_stats,
     get_user_by_id as get_user_profile,
+    insert_expense,
 )
 
+EXPENSE_CATEGORIES = [
+    "Food",
+    "Transport",
+    "Bills",
+    "Health",
+    "Entertainment",
+    "Shopping",
+    "Other",
+]
+
 app = Flask(__name__)
-app.secret_key = "dev-secret-key-change-in-production"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 
 # Register teardown so the SQLite connection is closed after each request.
 app.teardown_appcontext(close_db)
@@ -254,9 +266,80 @@ def profile():
     )
 
 
-@app.route("/expenses/add")
+@app.route("/analytics")
+@login_required
+def analytics():
+    """Analytics page — coming soon placeholder for logged-in users."""
+    return render_template("analytics.html")
+
+
+@app.route("/expenses/add", methods=["GET", "POST"])
+@login_required
 def add_expense():
-    return "Add expense — coming in Step 7"
+    """Add a new expense — GET renders the form, POST validates & inserts."""
+    if request.method == "POST":
+        amount_raw = request.form.get("amount", "").strip()
+        category = request.form.get("category", "").strip()
+        date_value = request.form.get("date", "").strip()
+        description = request.form.get("description", "").strip()
+
+        form_values = {
+            "amount": amount_raw,
+            "category": category,
+            "date": date_value,
+            "description": description,
+        }
+
+        error = None
+        amount = None
+        parsed_date = None
+        description_value = None
+
+        # Validate amount: required, positive number.
+        try:
+            amount = float(amount_raw)
+        except ValueError:
+            amount = None
+        if amount is None or amount <= 0:
+            error = "Please enter a valid amount greater than 0."
+        elif category not in EXPENSE_CATEGORIES:
+            error = "Please select a valid category."
+        elif description and len(description) > 200:
+            error = "Description must be 200 characters or less."
+
+        if error is None:
+            # Validate date: required, valid YYYY-MM-DD.
+            parsed_date = _parse_date(date_value)
+            if parsed_date is None:
+                error = "Please enter a valid date."
+
+        if error is None:
+            # Description is optional; store blank as NULL.
+            description_value = description or None
+            insert_expense(g.user["id"], amount, category, parsed_date, description_value)
+            flash("Expense added successfully!")
+            return redirect(url_for("profile"))
+
+        # Validation failed — re-render the form with the error and the
+        # previously submitted values preserved.
+        flash(error)
+        return render_template(
+            "add_expense.html",
+            categories=EXPENSE_CATEGORIES,
+            form_values=form_values,
+        )
+
+    # GET: render an empty form, defaulting the date to today.
+    return render_template(
+        "add_expense.html",
+        categories=EXPENSE_CATEGORIES,
+        form_values={
+            "amount": "",
+            "category": "",
+            "date": date.today().isoformat(),
+            "description": "",
+        },
+    )
 
 
 @app.route("/expenses/<int:id>/edit")
